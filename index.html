@@ -89,30 +89,40 @@ td{padding:7px 12px;color:var(--t2);vertical-align:middle}td.lk{color:var(--t1);
 </head>
 <body>
 <div id="ld"><div class="ld-logo">Fundação <em>Bradesco</em></div><div class="ld-trk"><div class="ld-bar" id="ldbar"></div></div><div class="ld-st" id="ldst">Conectando à planilha...</div></div>
-<div id="app"><nav id="sb"><div class="sb-hd"><div class="sb-logo">FB</div><div class="sb-ttl"><b>Fundação Bradesco</b><span>Gestão · Maneng</span></div><button id="sbt">&#9776;</button></div><div class="sb-scr"><div class="sb-sec"><div class="sb-lbl">Geral</div><div class="sbi on" id="nav-dash" onclick="go('dashboard')"><span class="sbi-ic">&#9638;</span><span class="sbi-nm">Dashboard</span></div></div><div class="sb-sec"><div class="sb-lbl">Escolas</div><div id="nav-schools"></div></div></div></nav><main id="mn"><div id="tb"><div id="crumb">Base de Dados &middot; <strong id="ct">Dashboard</strong></div><span id="srcbadge" style="font-size:10px;font-family:var(--fm);display:flex;align-items:center;gap:5px;white-space:nowrap"></span><button onclick="refreshData(true)" id="rfbtn" title="Recarregar dados da planilha" style="background:var(--s2);border:1px solid var(--ln);border-radius:6px;color:var(--t2);font-size:11px;padding:5px 10px;cursor:pointer;font-family:var(--ff)">&#8635; Atualizar</button><div class="src-wrap"><input id="src" type="text" placeholder="Buscar escola... &#8984;K" oninput="filterSB(this.value)"></div></div><div id="pg"></div></main></div>
+<div id="app"><nav id="sb"><div class="sb-hd"><div class="sb-logo">FB</div><div class="sb-ttl"><b>Fundação Bradesco</b><span>Gestão · Maneng</span></div><button id="sbt">&#9776;</button></div><div class="sb-scr"><div class="sb-sec"><div class="sb-lbl">Geral</div><div class="sbi on" id="nav-dash" onclick="go('dashboard')"><span class="sbi-ic">&#9638;</span><span class="sbi-nm">Dashboard</span></div></div><div class="sb-sec"><div class="sb-lbl">Operação</div><div id="nav-sections"></div></div><div class="sb-sec"><div class="sb-lbl">Escolas</div><div id="nav-schools"></div></div></div></nav><main id="mn"><div id="tb"><div id="crumb">Base de Dados &middot; <strong id="ct">Dashboard</strong></div><span id="srcbadge" style="font-size:10px;font-family:var(--fm);display:flex;align-items:center;gap:5px;white-space:nowrap"></span><button onclick="openCfg()" title="Configurar sincronização (Apps Script)" style="background:var(--s2);border:1px solid var(--ln);border-radius:6px;color:var(--t2);font-size:11px;padding:5px 8px;cursor:pointer">&#9881;</button><button onclick="refreshData(true)" id="rfbtn" title="Recarregar dados da planilha" style="background:var(--s2);border:1px solid var(--ln);border-radius:6px;color:var(--t2);font-size:11px;padding:5px 10px;cursor:pointer;font-family:var(--ff)">&#8635; Atualizar</button><div class="src-wrap"><input id="src" type="text" placeholder="Buscar escola... &#8984;K" oninput="filterSB(this.value)"></div></div><div id="pg"></div><div id="savebar" style="display:none;position:sticky;bottom:0;background:var(--s2);border-top:2px solid var(--red);padding:10px 22px;z-index:40;align-items:center;gap:14px"><span id="savemsg" style="font-size:12px;color:var(--t1)"></span><span style="margin-left:auto;display:flex;gap:8px"><button onclick="discardPending()" class="tbtn">Desfazer tudo</button><button onclick="savePending()" id="savebtn" class="tbtn" style="background:var(--red);border-color:var(--red);color:#fff;font-weight:600">&#10003; Salvar na planilha</button></span></div></main></div>
+<div id="toast" style="display:none;position:fixed;bottom:70px;left:50%;transform:translateX(-50%);background:var(--s4);border:1px solid var(--ln);border-radius:8px;padding:9px 16px;font-size:12px;color:var(--t1);z-index:99;box-shadow:0 6px 24px rgba(0,0,0,.5)"></div>
+<div id="cfgmodal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:90;align-items:center;justify-content:center">
+  <div style="background:var(--s2);border:1px solid var(--ln);border-radius:12px;padding:22px;width:min(520px,92vw)">
+    <h3 style="font-size:15px;margin-bottom:6px">Sincronização com a planilha</h3>
+    <p style="font-size:11.5px;color:var(--t2);margin-bottom:12px">Cole aqui a URL do <b>Apps Script</b> implantado como app da web (veja INSTRUCOES_APPS_SCRIPT.md). Com ela, tudo que for editado no site é gravado na planilha Google — para todos.</p>
+    <input id="cfgurl" type="text" placeholder="https://script.google.com/macros/s/....../exec" style="width:100%;background:var(--s3);border:1px solid var(--ln);border-radius:6px;color:var(--t1);font-size:11px;font-family:var(--fm);padding:9px;outline:none">
+    <div class="modal-btns"><button class="tbtn" onclick="closeCfg()">Cancelar</button><button class="tbtn amber" onclick="saveCfg()">Salvar</button></div>
+  </div>
+</div>
+<div id="secmodal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:90;align-items:center;justify-content:center;overflow:auto">
+  <div style="background:var(--s2);border:1px solid var(--ln);border-radius:12px;padding:22px;width:min(560px,92vw);margin:20px" id="secmodal-in"></div>
+</div>
 <script>
-/* ================= FONTE DE DADOS =================
-   Planilha Google (compartilhada como "qualquer pessoa com o link pode ver").
-   O site lê as abas ao vivo via API gviz — igual conceito do status-leroy-maneng,
-   mas sem snapshot manual: sempre direto da planilha. */
+/* ============ CONFIG ============ */
 var SHEET_ID='1iQvwSCbCGSIxaf_q84IjbKNkwVegHegFzHzNkR38YTw';
+var DEFAULT_SCRIPT_URL='';   // cole aqui a URL /exec do Apps Script para valer para todos
+function scriptUrl(){try{return localStorage.getItem('fb_script_url')||DEFAULT_SCRIPT_URL;}catch(e){return DEFAULT_SCRIPT_URL;}}
 
-/* Registro das escolas: u=nome, spv=supervisor, uf, sh=nome da ABA na planilha.
-   total/op/inop/eff = último valor conhecido (fallback se ficar sem conexão). */
+var SUMMARY_GID='1125679703';   // aba principal: Unidade | Loja | Spv Maneng | UF
 var IDX=[
-{u:"Macapá",spv:"Rodrigo Rogério",uf:"AP",total:94,op:58,inop:36,eff:62,sh:"MACAPÁ"},
-{u:"Cacoal",spv:"Rodrigo Rogério",uf:"RO",total:77,op:67,inop:10,eff:87,sh:"CACOAL"},
-{u:"Paragominas",spv:"Rodrigo Rogério",uf:"PA",total:56,op:49,inop:7,eff:88,sh:"PARAGOMINAS"},
-{u:"Conceição Araguaia",spv:"Rodrigo Rogério",uf:"PA",total:55,op:54,inop:1,eff:98,sh:"CONC. ARAGUAIA"},
-{u:"Rio Branco",spv:"Rodrigo Rogério",uf:"AC",total:89,op:89,inop:0,eff:100,sh:"RIO BRANCO"},
-{u:"Boa Vista",spv:"Rodrigo Rogério",uf:"RR",total:62,op:62,inop:0,eff:100,sh:"BOA VISTA"},
-{u:"Manaus",spv:"Rodrigo Rogério",uf:"AM",total:67,op:66,inop:1,eff:99,sh:"MANAUS"},
-{u:"Campinas",spv:"Rodrigo Rogério",uf:"SP",total:87,op:85,inop:2,eff:98,sh:"CAMPINAS"},
-{u:"Marília",spv:"Rodrigo Rogério",uf:"SP",total:77,op:75,inop:2,eff:97,sh:"MARÍLIA"},
-{u:"JD. Conceição",spv:"Rodrigo Rogério",uf:"SP",total:49,op:49,inop:0,eff:100,sh:"JD. CONCEIÇÃO"},
-{u:"Registro",spv:"Rodrigo Rogério",uf:"SP",total:66,op:66,inop:0,eff:100,sh:"REGISTRO"},
-{u:"Osasco I",spv:"Rodrigo Rogério",uf:"SP",total:173,op:161,inop:12,eff:93,sh:"OSASCO I"},
-{u:"Osasco II",spv:"Rodrigo Rogério",uf:"SP",total:147,op:147,inop:0,eff:100,sh:"OSASCO II"},
+{u:"Macapá",spv:"Alex",uf:"AP",total:94,op:58,inop:36,eff:62,sh:"MACAPÁ"},
+{u:"Cacoal",spv:"Alex",uf:"RO",total:77,op:67,inop:10,eff:87,sh:"CACOAL"},
+{u:"Paragominas",spv:"Alex",uf:"PA",total:56,op:49,inop:7,eff:88,sh:"PARAGOMINAS"},
+{u:"Conceição Araguaia",spv:"Alex",uf:"PA",total:55,op:54,inop:1,eff:98,sh:"CONC. ARAGUAIA"},
+{u:"Rio Branco",spv:"Alex",uf:"AC",total:89,op:89,inop:0,eff:100,sh:"RIO BRANCO"},
+{u:"Boa Vista",spv:"Alex",uf:"RR",total:62,op:62,inop:0,eff:100,sh:"BOA VISTA"},
+{u:"Manaus",spv:"Alex",uf:"AM",total:67,op:66,inop:1,eff:99,sh:"MANAUS"},
+{u:"Campinas",spv:"Alex",uf:"SP",total:87,op:85,inop:2,eff:98,sh:"CAMPINAS"},
+{u:"Marília",spv:"Alex",uf:"SP",total:77,op:75,inop:2,eff:97,sh:"MARÍLIA"},
+{u:"JD. Conceição",spv:"Alex",uf:"SP",total:49,op:49,inop:0,eff:100,sh:"JD. CONCEIÇÃO"},
+{u:"Registro",spv:"Alex",uf:"SP",total:66,op:66,inop:0,eff:100,sh:"REGISTRO"},
+{u:"Osasco I",spv:"Alex",uf:"SP",total:173,op:161,inop:12,eff:93,sh:"OSASCO I"},
+{u:"Osasco II",spv:"Alex",uf:"SP",total:147,op:147,inop:0,eff:100,sh:"OSASCO II"},
 {u:"Ceilândia",spv:"Franckllyn Moreira",uf:"DF",total:99,op:91,inop:8,eff:92,sh:"CEILÂNDIA"},
 {u:"Aparecida de Goiânia",spv:"Franckllyn Moreira",uf:"DF",total:78,op:78,inop:0,eff:100,sh:"APARECIDA DE GOIÂNIA"},
 {u:"Fazenda Canuanã",spv:"Franckllyn Moreira",uf:"TO",total:162,op:134,inop:28,eff:83,sh:"FAZENDA CANUANÃ"},
@@ -121,26 +131,38 @@ var IDX=[
 {u:"São João Del Rei",spv:"Edwilder Costa",uf:"MG",total:82,op:82,inop:0,eff:100,sh:"SÃO JOÃO DEL REI"},
 {u:"Rio de Janeiro",spv:"Flavio Bezerra",uf:"RJ",total:112,op:112,inop:0,eff:100,sh:"RIO DE JANEIRO"},
 {u:"Vila Velha",spv:"Bruno Silva",uf:"ES",total:62,op:62,inop:0,eff:100,sh:"VILA VELHA"},
-{u:"Cuiabá",spv:"Rodrigo Rogério",uf:"MT",total:72,op:72,inop:0,eff:100,sh:"CUIABÁ"}
+{u:"Cuiabá",spv:"Vagner Tiburtino",uf:"MT",total:72,op:72,inop:0,eff:100,sh:"CUIABÁ"}
 ];
 
-var LIVE={};          // dados ao vivo por aba: {eq:[{a,e,st,pend,btu,fab,mod,obs,env}]}
-var LAST_SYNC=null;   // Date da última sincronização
-var LIVE_OK=0;        // quantas abas carregaram
-var OV={},EDITS={},CUR='dashboard',EDIT_MODE=false;
+/* Seções da operação (abas na planilha; o Apps Script cria a aba no 1º registro) */
+var SECTIONS=[
+ {id:'chamados',tab:'Chamados',ic:'&#128222;',cols:['Data','Escola','Ambiente','Equipamento','Descrição','Prioridade','Status','Responsável']},
+ {id:'propostas',tab:'Propostas',ic:'&#128196;',cols:['Data','Escola','Descrição','Valor (R$)','Status','Observações']},
+ {id:'preventivas',tab:'Preventivas',ic:'&#128295;',cols:['Mês','Escola','Data Programada','Data Executada','Status','Observações']},
+ {id:'prevsem',tab:'Preventivas Semestrais',ic:'&#128197;',cols:['Semestre','Escola','Data Programada','Data Executada','Status','Observações']},
+ {id:'corretivas',tab:'Corretivas',ic:'&#9889;',cols:['Data','Escola','Equipamento','Defeito','Ação','Status','Observações']},
+ {id:'pmoc',tab:'PMOC',ic:'&#128203;',cols:['Escola','Mês','Atividade','Responsável','Status','Observações']},
+ {id:'cronograma',tab:'Cronograma',ic:'&#128198;',cols:['Escola','Atividade','Início','Fim','Status','Observações']}
+];
+
+var FIELD_COL={a:'B',e:'C',st:'D',pend:'E',btu:'H',fab:'I',mod:'J',obs:'K'};
+var FIELD_LBL={a:'Ambiente',e:'Equipamento',st:'Status',pend:'Pendência',btu:'BTU/h',fab:'Fabricante',mod:'Modelo',obs:'Observações'};
+
+var LIVE={},SECT={},LAST_SYNC=null,LIVE_OK=0,CUR='dashboard';
+var F={status:'all',school:null};      // filtro do dashboard
+var SFILT='all';                        // filtro da página da escola: all|ok|fl
+var PENDING={},EDITS={};                // pendências p/ planilha; edições locais (sem script)
 
 function loadLS(){
-  try{OV=JSON.parse(localStorage.getItem('fb_ov')||'{}');}catch(e){OV={};}
-  try{EDITS=JSON.parse(localStorage.getItem('fb_ed')||'{}');}catch(e){EDITS={};}
+  try{EDITS=JSON.parse(localStorage.getItem('fb_ed2')||'{}');}catch(e){EDITS={};}
+  try{PENDING=JSON.parse(localStorage.getItem('fb_pending')||'{}');}catch(e){PENDING={};}
 }
-function saveOv(){try{localStorage.setItem('fb_ov',JSON.stringify(OV));}catch(e){}}
-function saveEdits(){try{localStorage.setItem('fb_ed',JSON.stringify(EDITS));}catch(e){}}
+function saveEdits(){try{localStorage.setItem('fb_ed2',JSON.stringify(EDITS));}catch(e){}}
+function savePendingLS(){try{localStorage.setItem('fb_pending',JSON.stringify(PENDING));}catch(e){}}
 loadLS();
 
-/* ================= LEITURA DA PLANILHA ================= */
-function gvizUrl(tab){
-  return 'https://docs.google.com/spreadsheets/d/'+SHEET_ID+'/gviz/tq?tqx=out:json&headers=0&sheet='+encodeURIComponent(tab);
-}
+/* ============ LEITURA DA PLANILHA ============ */
+function gvizUrl(tab){return 'https://docs.google.com/spreadsheets/d/'+SHEET_ID+'/gviz/tq?tqx=out:json&headers=0&sheet='+encodeURIComponent(tab);}
 function parseGviz(txt){
   var i=txt.indexOf('(');var j=txt.lastIndexOf(')');
   if(i<0||j<0)throw new Error('resposta inválida');
@@ -155,15 +177,18 @@ function parseGviz(txt){
   });
 }
 function parseTab(rows){
-  var eq=[];
+  var eq=[],started=false;
   for(var i=0;i<rows.length;i++){
     var r=rows[i];
     var a=(r[1]||'').replace(/#REF!\s*/gi,'').trim();
     var e=(r[2]||'').trim();
     var na=a.toUpperCase(),ne=e.toUpperCase();
-    if(na.indexOf('AMBIENTE')>-1&&ne.indexOf('EQUIPAMENTO')>-1)continue;            // cabeçalho
+    if(!started){
+      if(na.indexOf('AMBIENTE')>-1&&ne.indexOf('EQUIPAMENTO')>-1)started=true;
+      continue;                                    // ignora tudo antes do cabeçalho
+    }
     if(na==='RESUMO STATUS'||na==='SISTEMAS'||na==='TOTAL'||na==='FUNCIONANDO'||
-       na==='CIRCUITOS PARADOS'||ne==='QUANT')break;                                 // rodapé resumo
+       na==='CIRCUITOS PARADOS'||ne==='QUANT')break;
     if(!a&&!e)continue;
     if(a&&!e){eq.push({a:a,e:'',st:'',pend:'',btu:'',fab:'',mod:'',obs:'',env:true});continue;}
     var st=(r[3]||'').trim();
@@ -171,6 +196,7 @@ function parseTab(rows){
     eq.push({a:a,e:e,st:st,pend:(r[4]||'').trim(),btu:(r[7]||'').trim(),
              fab:(r[8]||'').trim(),mod:(r[9]||'').trim(),obs:(r[10]||'').trim()});
   }
+  if(!started)throw new Error('aba não encontrada (sem cabeçalho AMBIENTE/EQUIPAMENTO)');
   return eq;
 }
 function fetchTab(s){
@@ -183,57 +209,143 @@ function fetchTab(s){
     LIVE[s.sh]={eq:eq};
   });
 }
+/* seções: aba genérica — 1ª linha não vazia é o cabeçalho */
+function looksLikeDefaultTab(rows){
+  for(var i=0;i<Math.min(rows.length,4);i++){
+    var j=rows[i].join('|');
+    if(j.indexOf('Spv Maneng')>-1||j.indexOf('Escolas Fundação Bradesco')>-1)return true;
+  }
+  return false;
+}
+function fetchSection(sec){
+  return fetch(gvizUrl(sec.tab)).then(function(r){return r.text();}).then(function(t){
+    var rows=parseGviz(t).filter(function(r){return r.some(function(c){return c!=='';});});
+    if(!rows.length||looksLikeDefaultTab(rows)){SECT[sec.id]={missing:true,hdr:sec.cols,rows:[]};return;}
+    var hdr=rows[0].filter(function(c){return c!=='';}).length>=2?rows[0]:sec.cols;
+    var start=(hdr===rows[0])?1:0;
+    // corta colunas vazias do fim do cabeçalho
+    var last=hdr.length-1;while(last>0&&hdr[last]==='')last--;
+    hdr=hdr.slice(0,last+1);
+    SECT[sec.id]={missing:false,hdr:hdr,rows:rows.slice(start).map(function(r){return r.slice(0,hdr.length);})};
+  }).catch(function(){SECT[sec.id]={missing:true,hdr:sec.cols,rows:[],err:true};});
+}
+/* supervisores/UF ao vivo da aba principal */
+function normName(s){
+  s=String(s||'').trim().toUpperCase();
+  try{s=s.normalize('NFD').replace(/[\u0300-\u036f]/g,'');}catch(e){}
+  return s;
+}
+function fetchSpv(){
+  var url='https://docs.google.com/spreadsheets/d/'+SHEET_ID+'/gviz/tq?tqx=out:json&headers=0&gid='+SUMMARY_GID;
+  return fetch(url).then(function(r){return r.text();}).then(function(t){
+    var rows=parseGviz(t);
+    var map={};
+    rows.forEach(function(r){
+      var u=(r[1]||'').trim(),spv=(r[3]||'').trim(),uf=(r[4]||'').trim();
+      if(u&&spv)map[normName(u)]={spv:spv,uf:uf};
+    });
+    IDX.forEach(function(s){
+      var m=map[normName(s.u)];
+      if(m){s.spv=m.spv;if(m.uf)s.uf=m.uf;}
+    });
+  }).catch(function(){});
+}
 function refreshData(manual){
   var btn=document.getElementById('rfbtn');
   if(btn){btn.disabled=true;btn.textContent='⟳ Carregando...';}
   var done=0;LIVE_OK=0;
   var jobs=IDX.map(function(s){
-    return fetchTab(s).then(function(){LIVE_OK++;}).catch(function(){})
+    return fetchTab(s).then(function(){LIVE_OK++;}).catch(function(){delete LIVE[s.sh];})
       .then(function(){
         done++;
         var bar=document.getElementById('ldbar'),st=document.getElementById('ldst');
-        if(bar&&!LAST_SYNC){bar.style.width=Math.round(done/IDX.length*100)+'%';}
+        if(bar&&!LAST_SYNC){bar.style.width=Math.round(done/IDX.length*90)+'%';}
         if(st&&!LAST_SYNC){st.textContent=s.u+'...';}
       });
   });
+  jobs=jobs.concat(SECTIONS.map(function(sec){return fetchSection(sec);}));
+  jobs.push(fetchSpv());
   return Promise.all(jobs).then(function(){
     LAST_SYNC=new Date();
     updBadge();buildSB();
     if(btn){btn.disabled=false;btn.innerHTML='&#8635; Atualizar';}
-    if(CUR==='dashboard')renderDash(null);
-    else if(CUR.indexOf('school:')===0)renderSchool(CUR.slice(7));
+    rerender();
   });
+}
+function rerender(){
+  if(CUR==='dashboard')renderDash();
+  else if(CUR.indexOf('school:')===0)renderSchool(CUR.slice(7));
+  else if(CUR.indexOf('sec:')===0)renderSection(CUR.slice(4));
 }
 function updBadge(){
   var b=document.getElementById('srcbadge');if(!b)return;
   var hh=LAST_SYNC?LAST_SYNC.toTimeString().slice(0,5):'—';
-  if(LIVE_OK===IDX.length){
-    b.innerHTML='<span style="width:7px;height:7px;border-radius:50%;background:var(--g);display:inline-block"></span><span style="color:var(--t2)">planilha ao vivo · '+hh+'</span>';
-  }else if(LIVE_OK>0){
-    b.innerHTML='<span style="width:7px;height:7px;border-radius:50%;background:var(--a);display:inline-block"></span><span style="color:var(--t2)">'+LIVE_OK+'/'+IDX.length+' abas · '+hh+'</span>';
-  }else{
-    b.innerHTML='<span style="width:7px;height:7px;border-radius:50%;background:var(--red2);display:inline-block"></span><span style="color:var(--t2)">sem conexão · último valor conhecido</span>';
-  }
+  var sync=scriptUrl()?' · sync ✓':'';
+  if(LIVE_OK===IDX.length)b.innerHTML='<span style="width:7px;height:7px;border-radius:50%;background:var(--g);display:inline-block"></span><span style="color:var(--t2)">planilha ao vivo · '+hh+sync+'</span>';
+  else if(LIVE_OK>0)b.innerHTML='<span style="width:7px;height:7px;border-radius:50%;background:var(--a);display:inline-block"></span><span style="color:var(--t2)">'+LIVE_OK+'/'+IDX.length+' abas · '+hh+sync+'</span>';
+  else b.innerHTML='<span style="width:7px;height:7px;border-radius:50%;background:var(--red2);display:inline-block"></span><span style="color:var(--t2)">sem conexão</span>';
 }
 
-/* ================= HELPERS ================= */
+/* ============ HELPERS ============ */
 function ec(p){if(p==null)return'#444';if(p>=95)return'#22C55E';if(p>=85)return'#84cc16';if(p>=70)return'#F59E0B';return'#F97316';}
 function ebg(p){if(p==null)return'rgba(68,68,68,.1)';if(p>=95)return'rgba(34,197,94,.12)';if(p>=85)return'rgba(132,204,22,.12)';if(p>=70)return'rgba(245,158,11,.12)';return'rgba(249,115,22,.12)';}
 function slug(s){return s.toLowerCase().replace(/[^a-z0-9]/g,'-');}
 function xe(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
-function isOk(sh,ri,item){
-  var k=sh+'|'+ri;
-  if(OV.hasOwnProperty(k))return OV[k];
-  return item.st!=='0';
+function qs(s){return s.replace(/'/g,"\\'");}
+function toast(msg,err){
+  var t=document.getElementById('toast');
+  t.textContent=msg;t.style.display='block';t.style.borderColor=err?'var(--red)':'var(--ln)';
+  clearTimeout(t._tm);t._tm=setTimeout(function(){t.style.display='none';},3200);
 }
-function getEdit(sh,ri,f){var k=sh+'|'+ri+'|'+f;return EDITS.hasOwnProperty(k)?EDITS[k]:null;}
-function setEdit(sh,ri,f,val){
-  var k=sh+'|'+ri+'|'+f;
-  if(val===''||val===null){delete EDITS[k];}else{EDITS[k]=val;}
-  saveEdits();
+function pkey(sh,ri,f){return sh+'|'+ri+'|'+f;}
+function getVal(sh,ri,f,orig){
+  var k=pkey(sh,ri,f);
+  if(PENDING.hasOwnProperty(k))return PENDING[k].val;
+  if(EDITS.hasOwnProperty(k))return EDITS[k];
+  return orig;
 }
-function getVal(sh,ri,f,orig){var ed=getEdit(sh,ri,f);return ed!==null?ed:orig;}
-function countEdits(sh){return Object.keys(EDITS).filter(function(k){return k.indexOf(sh+'|')===0;}).length;}
+function isPend(sh,ri,f){return PENDING.hasOwnProperty(pkey(sh,ri,f));}
+function isLocal(sh,ri,f){return EDITS.hasOwnProperty(pkey(sh,ri,f));}
+function isOk(sh,ri,item){return getVal(sh,ri,'st',item.st)!=='0';}
+function setPending(sh,ri,f,val,orig){
+  var k=pkey(sh,ri,f);
+  if(val===orig&&!EDITS.hasOwnProperty(k)){delete PENDING[k];}
+  else PENDING[k]={sh:sh,ri:ri,field:f,val:val};
+  savePendingLS();updSaveBar();
+}
+function updSaveBar(){
+  var n=Object.keys(PENDING).length;
+  var bar=document.getElementById('savebar'),msg=document.getElementById('savemsg');
+  if(!bar)return;
+  bar.style.display=n?'flex':'none';
+  if(msg)msg.innerHTML='&#9998; <b>'+n+'</b> alteraç'+(n===1?'ão':'ões')+' pendente'+(n===1?'':'s')+(scriptUrl()?'':' · <span style="color:var(--a)">sem Apps Script configurado — serão salvas só neste navegador</span>');
+}
+function discardPending(){
+  if(!confirm('Descartar todas as alterações pendentes?'))return;
+  PENDING={};savePendingLS();updSaveBar();rerender();
+}
+function savePending(){
+  var list=Object.keys(PENDING).map(function(k){return PENDING[k];});
+  if(!list.length)return;
+  var url=scriptUrl();
+  if(!url){
+    list.forEach(function(p){EDITS[pkey(p.sh,p.ri,p.field)]=p.val;});
+    saveEdits();PENDING={};savePendingLS();updSaveBar();rerender();
+    toast('Salvo neste navegador. Configure o Apps Script (⚙) para gravar na planilha.');
+    return;
+  }
+  var btn=document.getElementById('savebtn');
+  if(btn){btn.disabled=true;btn.textContent='Salvando...';}
+  fetch(url,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain'},
+    body:JSON.stringify({action:'write',edits:list})})
+  .then(function(){
+    PENDING={};savePendingLS();updSaveBar();
+    toast('Salvo na planilha ✓');
+    setTimeout(function(){refreshData(false);},1500);
+  })
+  .catch(function(){toast('Falha ao salvar — verifique a conexão',true);})
+  .then(function(){if(btn){btn.disabled=false;btn.innerHTML='&#10003; Salvar na planilha';}});
+}
 
 function getStats(s){
   var L=LIVE[s.sh];
@@ -245,66 +357,162 @@ function getStats(s){
   }
   return{total:s.total,op:s.op,inop:s.inop,eff:s.eff,live:false};
 }
+function paradasDe(s){
+  var L=LIVE[s.sh];if(!L)return[];
+  var out=[],eq=L.eq.filter(function(x){return x.e;}),amb='';
+  var all=L.eq;var ri=0;
+  for(var i=0;i<all.length;i++){
+    var it=all[i];
+    if(it.env){amb=it.a;continue;}
+    if(it.a)amb=it.a;
+    if(!isOk(s.sh,ri,it))out.push({s:s,ri:ri,amb:amb,it:it});
+    ri++;
+  }
+  return out;
+}
 
-/* ================= SIDEBAR / NAV ================= */
+/* ============ SIDEBAR ============ */
 function buildSB(){
+  document.getElementById('nav-sections').innerHTML=SECTIONS.map(function(sec){
+    var d=SECT[sec.id];var n=d&&!d.missing?d.rows.length:0;
+    return '<div class="sbi" id="nav-sec-'+sec.id+'" onclick="go(\'sec:'+sec.id+'\')">'+
+      '<span class="sbi-ic">'+sec.ic+'</span><span class="sbi-nm">'+sec.tab+'</span>'+
+      (n?'<span class="sbi-pill" style="color:var(--t2);background:var(--s3)">'+n+'</span>':'')+'</div>';
+  }).join('');
   document.getElementById('nav-schools').innerHTML=IDX.map(function(s){
     var st=getStats(s),p=st.eff,c=ec(p),b=ebg(p);
-    var edCnt=countEdits(s.sh);
-    return '<div class="sbi" id="nav-'+slug(s.u)+'" onclick="go(\'school:'+s.u.replace(/'/g,"\\'")+'\')">'+
+    return '<div class="sbi" id="nav-'+slug(s.u)+'" onclick="go(\'school:'+qs(s.u)+'\')">'+
       '<span class="sbi-ic">'+(st.live?'&#9643;':'&#9888;')+'</span>'+
-      '<span class="sbi-nm">'+s.u+(edCnt?'<span style="color:var(--a);font-size:8px;margin-left:3px">✎'+edCnt+'</span>':'')+'</span>'+
+      '<span class="sbi-nm">'+s.u+'</span>'+
       '<span class="sbi-pill" style="color:'+c+';background:'+b+'">'+(p!=null?p+'%':'—')+'</span>'+
       '</div>';
   }).join('');
-  if(CUR.indexOf('school:')===0){
-    var el=document.getElementById('nav-'+slug(CUR.slice(7)));
-    if(el)el.classList.add('on');
-  }else{document.getElementById('nav-dash').classList.add('on');}
+  markNav();
+}
+function markNav(){
+  document.querySelectorAll('.sbi').forEach(function(e){e.classList.remove('on');});
+  var el=null;
+  if(CUR==='dashboard')el=document.getElementById('nav-dash');
+  else if(CUR.indexOf('school:')===0)el=document.getElementById('nav-'+slug(CUR.slice(7)));
+  else if(CUR.indexOf('sec:')===0)el=document.getElementById('nav-sec-'+CUR.slice(4));
+  if(el)el.classList.add('on');
 }
 document.getElementById('sbt').onclick=function(){document.getElementById('sb').classList.toggle('mini');};
-
 function go(page){
-  CUR=page;
-  document.querySelectorAll('.sbi').forEach(function(e){e.classList.remove('on');});
+  CUR=page;SFILT='all';
   document.getElementById('pg').scrollTop=0;
-  if(page==='dashboard'){
-    document.getElementById('nav-dash').classList.add('on');
-    document.getElementById('ct').textContent='Dashboard';
-    renderDash(null);
-  }else if(page.indexOf('school:')===0){
-    var nm=page.slice(7);
-    var el=document.getElementById('nav-'+slug(nm));
-    if(el)el.classList.add('on');
-    document.getElementById('ct').textContent=nm;
-    renderSchool(nm);
+  if(page==='dashboard'){document.getElementById('ct').textContent='Dashboard';renderDash();}
+  else if(page.indexOf('school:')===0){document.getElementById('ct').textContent=page.slice(7);renderSchool(page.slice(7));}
+  else if(page.indexOf('sec:')===0){
+    var sec=SECTIONS.filter(function(x){return x.id===page.slice(4);})[0];
+    document.getElementById('ct').textContent=sec?sec.tab:'';renderSection(page.slice(4));
   }
+  markNav();
 }
+function goSchoolFalhas(u){SFILT='fl';CUR='school:'+u;document.getElementById('ct').textContent=u;renderSchool(u);markNav();}
 function filterSB(q){
   document.querySelectorAll('#nav-schools .sbi').forEach(function(el){
     el.style.display=el.textContent.toLowerCase().indexOf(q.toLowerCase())>-1?'':'none';
   });
 }
 
-/* ================= DASHBOARD ================= */
-function renderDash(filterFn){
-  var data=filterFn?IDX.filter(filterFn):IDX;
+/* ============ DASHBOARD (filtros clicáveis) ============ */
+function setKpi(mode){
+  F.status=(F.status===mode)?'all':mode;   // clicar de novo desliga
+  if(F.status!=='inop')F.school=null;
+  renderDash();
+}
+function setDashSchool(sh){
+  F.school=(F.school===sh)?null:sh;
+  renderDash();
+}
+function renderDash(){
+  var all=IDX;
   var tT=0,tO=0,tI=0,eS=0,eC=0,f100=0,crit=0;
-  data.forEach(function(s){
+  all.forEach(function(s){
     var st=getStats(s);tT+=st.total;tO+=st.op;tI+=st.inop;
     if(st.eff!=null){eS+=st.eff;eC++;if(st.eff===100)f100++;if(st.eff<85)crit++;}
   });
   var avg=eC?Math.round(eS/eC):null;
-  var supvs=IDX.reduce(function(a,s){if(a.indexOf(s.spv)<0)a.push(s.spv);return a;},[]).sort();
 
+  function kpi(id,label,val,cls,sub){
+    var on=F.status===id;
+    return '<div class="kpi" onclick="setKpi(\''+id+'\')" style="cursor:pointer;transition:all .15s;'+(on?'border-color:var(--red);background:var(--rdim)':'')+'" title="clique para filtrar">'+
+      '<div class="kpi-l">'+label+(on?' <span style="color:var(--red2)">● filtro ativo</span>':'')+'</div>'+
+      '<div class="kpi-v '+cls+'">'+val+'</div><div class="kpi-s">'+sub+'</div></div>';
+  }
+  var kpis='<div class="kpis">'+
+    kpi('all','Total Equipamentos',tT.toLocaleString('pt-BR'),'','todas as escolas')+
+    kpi('op','Em Operação',tO.toLocaleString('pt-BR'),'g',(tT?Math.round(tO/tT*100):0)+'% do total · clique p/ ranking')+
+    kpi('inop','Máquinas Inoperantes',tI.toLocaleString('pt-BR'),'r','clique para ver só as paradas')+
+    kpi('eff','Eficiência Média',(avg!=null?avg+'%':'—'),'a',f100+' escolas em 100% · clique p/ piores')+
+    '</div>';
+
+  var fonte=LIVE_OK===IDX.length?'dados ao vivo da planilha Google':(LIVE_OK>0?LIVE_OK+' de '+IDX.length+' abas ao vivo':'sem conexão · último valor conhecido');
+  var head='<div class="ph"><h1>Escolas Fundação <em>Bradesco</em></h1><p>'+IDX.length+' unidades · '+fonte+(LAST_SYNC?' · sincronizado às '+LAST_SYNC.toTimeString().slice(0,5):'')+'</p></div>';
+
+  var body='';
+  if(F.status==='inop'){body=dashInop();}
+  else{
+    var data=all.slice();
+    if(F.status==='op')data.sort(function(a,b){return getStats(b).eff-getStats(a).eff;});
+    if(F.status==='eff')data.sort(function(a,b){return getStats(a).eff-getStats(b).eff;});
+    body=(F.status==='all'?chartsHTML(tT,tO,tI):'')+schoolsTable(data,F.status==='eff'?'piores primeiro':(F.status==='op'?'melhores primeiro':''));
+  }
+  document.getElementById('pg').innerHTML=head+kpis+body;
+  updSaveBar();
+}
+/* gráficos do dashboard (SVG/CSS puros, sem libs) */
+function chartsHTML(tT,tO,tI){
+  var pct=tT?Math.round(tO/tT*100):0;
+  var C=2*Math.PI*48, dash=(pct/100*C).toFixed(1);
+  var donut='<div class="kpi" style="display:flex;align-items:center;gap:14px">'+
+    '<svg viewBox="0 0 120 120" style="width:110px;min-width:110px">'+
+    '<circle cx="60" cy="60" r="48" fill="none" stroke="#262626" stroke-width="13"/>'+
+    '<circle cx="60" cy="60" r="48" fill="none" stroke="'+ec(pct)+'" stroke-width="13" stroke-linecap="round" stroke-dasharray="'+dash+' '+C.toFixed(1)+'" transform="rotate(-90 60 60)"/>'+
+    '<text x="60" y="58" text-anchor="middle" fill="#EFEFEF" font-size="22" font-weight="700" font-family="DM Mono,monospace">'+pct+'%</text>'+
+    '<text x="60" y="76" text-anchor="middle" fill="#888" font-size="8.5">em operação</text></svg>'+
+    '<div><div class="kpi-l">Operação da Rede</div>'+
+    '<div style="font-size:11px;color:var(--t2);line-height:1.9"><span style="color:var(--g);font-family:var(--fm)">'+tO.toLocaleString('pt-BR')+'</span> funcionando<br>'+
+    '<span style="color:var(--red2);font-family:var(--fm)">'+tI.toLocaleString('pt-BR')+'</span> paradas<br>'+
+    '<span style="font-family:var(--fm)">'+tT.toLocaleString('pt-BR')+'</span> total</div></div></div>';
+
+  var par=IDX.map(function(s){return{s:s,st:getStats(s)};}).filter(function(x){return x.st.inop>0;})
+    .sort(function(a,b){return b.st.inop-a.st.inop;}).slice(0,8);
+  var mx=par.length?par[0].st.inop:1;
+  var barras=par.map(function(x){
+    var w=Math.max(6,Math.round(x.st.inop/mx*100));
+    return '<div onclick="F.status=\'inop\';F.school=\''+qs(x.s.sh)+'\';renderDash()" style="display:flex;align-items:center;gap:8px;margin:4px 0;cursor:pointer" title="ver as paradas de '+xe(x.s.u)+'">'+
+      '<span style="font-size:10px;color:var(--t2);width:104px;text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+xe(x.s.u)+'</span>'+
+      '<div style="flex:1;height:11px;background:var(--s4);border-radius:3px;overflow:hidden"><div style="width:'+w+'%;height:100%;background:linear-gradient(90deg,#F97316,#FF2222)"></div></div>'+
+      '<span style="font-size:10.5px;font-family:var(--fm);color:var(--red2);min-width:24px">'+x.st.inop+'</span></div>';
+  }).join('');
+  var chartPar='<div class="kpi"><div class="kpi-l">Paradas por Escola · top '+par.length+' <span style="color:var(--t3);text-transform:none;letter-spacing:0">(clique na barra)</span></div>'+
+    (par.length?barras:'<div style="font-size:11px;color:var(--t3);padding:14px 0">Nenhuma máquina parada &#127881;</div>')+'</div>';
+
+  var bySpv={};
+  IDX.forEach(function(s){
+    var st=getStats(s);
+    if(!bySpv[s.spv])bySpv[s.spv]={n:0,t:0,o:0};
+    bySpv[s.spv].n++;bySpv[s.spv].t+=st.total;bySpv[s.spv].o+=st.op;
+  });
+  var spvRows=Object.keys(bySpv).sort().map(function(k){
+    var v=bySpv[k],p=v.t?Math.round(v.o/v.t*100):0,c=ec(p);
+    return '<div style="display:flex;align-items:center;gap:8px;margin:4px 0">'+
+      '<span style="font-size:10px;color:var(--t2);width:104px;text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+xe(k)+' · '+v.n+'</span>'+
+      '<div style="flex:1;height:11px;background:var(--s4);border-radius:3px;overflow:hidden"><div style="width:'+p+'%;height:100%;background:'+c+'"></div></div>'+
+      '<span style="font-size:10.5px;font-family:var(--fm);color:'+c+';min-width:32px">'+p+'%</span></div>';
+  }).join('');
+  var chartSpv='<div class="kpi"><div class="kpi-l">Eficiência por Supervisor <span style="color:var(--t3);text-transform:none;letter-spacing:0">(nº = escolas)</span></div>'+spvRows+'</div>';
+
+  return '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:10px;margin-bottom:20px">'+donut+chartPar+chartSpv+'</div>';
+}
+function schoolsTable(data,note){
   var rows=data.map(function(s){
     var st=getStats(s),pct=st.eff,c=ec(pct),lbl=pct!=null?pct+'%':'—',pn=pct||0;
-    var edCnt=countEdits(s.sh);
     return '<tr>'+
       '<td style="color:var(--t3);font-family:var(--fm);font-size:10px">'+String(IDX.indexOf(s)+1).padStart(2,'0')+'</td>'+
-      '<td class="lk" onclick="go(\'school:'+s.u.replace(/'/g,"\\'")+'\')">'+s.u+
-        (st.live?'':' <span title="sem conexão — último valor conhecido" style="color:var(--a);font-size:9px">&#9888;</span>')+
-        (edCnt?'<span style="color:var(--a);font-size:9px;margin-left:5px">✎'+edCnt+'</span>':'')+'</td>'+
+      '<td class="lk" onclick="go(\'school:'+qs(s.u)+'\')">'+s.u+(st.live?'':' <span title="sem conexão" style="color:var(--a);font-size:9px">&#9888;</span>')+'</td>'+
       '<td><span class="tag">'+s.uf+'</span></td>'+
       '<td style="font-size:11px">'+s.spv+'</td>'+
       '<td style="font-family:var(--fm)">'+st.total+'</td>'+
@@ -313,60 +521,55 @@ function renderDash(filterFn){
       '<td style="min-width:120px"><div class="bw"><div class="bt"><div class="bf" style="width:'+pn+'%;background:'+c+'"></div></div><span class="bv" style="color:'+c+'">'+lbl+'</span></div></td>'+
       '</tr>';
   }).join('');
-
-  var chipsSPV=supvs.map(function(sv){
-    return '<button class="chip" onclick="applyFilter(\'spv:'+sv.replace(/'/g,"\\'")+'\',this)">'+sv.split(' ')[0]+'</button>';
-  }).join('');
-  var totalEdits=Object.keys(EDITS).length;
-  var fonte=LIVE_OK===IDX.length?'dados ao vivo da planilha Google':(LIVE_OK>0?LIVE_OK+' de '+IDX.length+' abas ao vivo':'sem conexão · exibindo último valor conhecido');
-
-  document.getElementById('pg').innerHTML=
-    '<div class="ph"><h1>Escolas Fundação <em>Bradesco</em></h1><p>'+IDX.length+' unidades · '+fonte+(LAST_SYNC?' · sincronizado às '+LAST_SYNC.toTimeString().slice(0,5):'')+'</p></div>'+
-    '<div class="kpis">'+
-    '<div class="kpi"><div class="kpi-l">Total Equipamentos</div><div class="kpi-v">'+tT.toLocaleString('pt-BR')+'</div><div class="kpi-s">na base de dados</div></div>'+
-    '<div class="kpi"><div class="kpi-l">Em Operação</div><div class="kpi-v g">'+tO.toLocaleString('pt-BR')+'</div><div class="kpi-s">'+(tT?Math.round(tO/tT*100):0)+'% do total</div></div>'+
-    '<div class="kpi"><div class="kpi-l">Inoperantes</div><div class="kpi-v r">'+tI.toLocaleString('pt-BR')+'</div><div class="kpi-s">'+crit+' escolas críticas</div></div>'+
-    '<div class="kpi"><div class="kpi-l">Eficiência Média</div><div class="kpi-v a">'+(avg!=null?avg+'%':'—')+'</div><div class="kpi-s">'+f100+' escolas em 100%</div></div>'+
-    '</div>'+
-    '<div class="tw">'+
-    '<div class="tw-bar"><div class="tw-ttl">Índice de Eficiência</div>'+
-    '<button class="chip on" onclick="applyFilter(\'all\',this)">Todas</button>'+
-    '<button class="chip" onclick="applyFilter(\'100\',this)">100%</button>'+
-    '<button class="chip" onclick="applyFilter(\'crit\',this)">&lt;85%</button>'+
-    chipsSPV+
-    '<span class="mla">'+
-    '<button class="tbtn amber" onclick="exportEdits()" title="Exportar todas as edições como JSON">&#8595; Exportar edições</button>'+
-    '<button class="tbtn" onclick="importEdits()" title="Importar edições de JSON">&#8593; Importar</button>'+
-    (totalEdits?'<span style="color:var(--a);font-size:10px">✎ '+totalEdits+' edições</span>':'')+
-    '</span></div>'+
+  return '<div class="tw"><div class="tw-bar"><div class="tw-ttl">Índice de Eficiência</div>'+
+    (note?'<span style="font-size:10px;color:var(--t3)">'+note+'</span>':'')+
+    '<span class="mla" style="font-size:10px;color:var(--t3)">clique na unidade para abrir</span></div>'+
     '<table><thead><tr><th>#</th><th>Unidade</th><th>UF</th><th>Supervisor</th><th>Total</th><th>OK</th><th>Falha</th><th>Eficiência</th></tr></thead>'+
     '<tbody>'+rows+'</tbody></table></div>';
 }
-function applyFilter(f,btn){
-  document.querySelectorAll('.chip').forEach(function(c){c.classList.remove('on');});
-  btn.classList.add('on');
-  var fn=null;
-  if(f==='100')fn=function(s){return getStats(s).eff===100;};
-  else if(f==='crit')fn=function(s){var e=getStats(s).eff;return e!=null&&e<85;};
-  else if(f.indexOf('spv:')===0){var spv=f.slice(4);fn=function(s){return s.spv===spv;};}
-  renderDash(fn);
+function dashInop(){
+  var comFalha=IDX.filter(function(s){return getStats(s).inop>0;});
+  var sel=F.school?IDX.filter(function(s){return s.sh===F.school;}):comFalha;
+  var chips='<button class="chip'+(F.school?'':' on')+'" onclick="setDashSchool(null)">Todas ('+comFalha.length+')</button>'+
+    comFalha.map(function(s){
+      return '<button class="chip'+(F.school===s.sh?' on':'')+'" onclick="setDashSchool(\''+qs(s.sh)+'\')">'+s.u+' · '+getStats(s).inop+'</button>';
+    }).join('');
+  var linhas='';
+  sel.forEach(function(s){
+    paradasDe(s).forEach(function(p){
+      var pend=getVal(s.sh,p.ri,'pend',p.it.pend);
+      linhas+='<tr>'+
+        '<td class="lk" onclick="goSchoolFalhas(\''+qs(s.u)+'\')">'+s.u+'</td>'+
+        '<td><span class="tag">'+s.uf+'</span></td>'+
+        '<td style="font-size:10.5px;color:var(--t2)">'+xe(p.amb||'—')+'</td>'+
+        '<td class="eq-nm">'+xe(p.it.e)+'</td>'+
+        '<td style="font-size:10.5px">'+xe(getVal(s.sh,p.ri,'btu',p.it.btu)||'—')+'</td>'+
+        '<td style="font-size:10.5px;color:'+(pend?'var(--a)':'var(--t3)')+'">'+xe(pend||'—')+'</td>'+
+        '<td><span class="tg-lb fl">FALHA</span></td></tr>';
+    });
+  });
+  var totalSel=sel.reduce(function(n,s){return n+getStats(s).inop;},0);
+  if(!linhas)linhas='<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--t3)">Nenhuma máquina parada &#127881;</td></tr>';
+  return '<div class="tw"><div class="tw-bar"><div class="tw-ttl">&#9888; Máquinas paradas'+(F.school?' — '+sel[0].u:'')+'</div>'+chips+
+    '<span class="mla" style="font-size:10px;color:var(--t3)">'+totalSel+' paradas'+(F.school?' nesta escola':' na rede')+'</span></div>'+
+    '<table><thead><tr><th>Escola</th><th>UF</th><th>Ambiente</th><th>Equipamento</th><th>BTU/h</th><th>Pendência</th><th>Status</th></tr></thead>'+
+    '<tbody>'+linhas+'</tbody></table></div>';
 }
 
-/* ================= PÁGINA DA ESCOLA ================= */
+/* ============ PÁGINA DA ESCOLA ============ */
+function setSFilt(f){SFILT=f;var nm=CUR.slice(7);renderSchool(nm);}
 function renderSchool(name){
   var s=IDX.filter(function(x){return x.u===name;})[0];
   if(!s)return;
   var init=name.split(' ').map(function(w){return w[0]||'';}).filter(Boolean).slice(0,2).join('').toUpperCase();
   var st=getStats(s),c=ec(st.eff);
-  var edCnt=countEdits(s.sh);
 
   document.getElementById('pg').innerHTML=
     '<div class="sh">'+
     '<div class="sh-av">'+init+'</div>'+
     '<div class="sh-info"><h2>'+s.u+'</h2>'+
     '<div class="sh-meta"><span>&#128506; '+s.uf+'</span><span>&#128100; '+s.spv+'</span>'+
-    '<span style="color:'+(st.live?'var(--g)':'var(--a)')+';font-size:10px">'+(st.live?'● aba "'+s.sh+'" ao vivo':'&#9888; sem conexão — último valor conhecido')+'</span>'+
-    (edCnt?'<span style="color:var(--a);font-size:10px">✎ '+edCnt+' edições locais</span>':'')+
+    '<span style="color:'+(st.live?'var(--g)':'var(--a)')+';font-size:10px">'+(st.live?'● aba "'+xe(s.sh)+'" ao vivo':'&#9888; sem conexão')+'</span>'+
     '</div></div>'+
     '<div class="sh-stats">'+
     '<div class="ss"><div class="ss-v" id="st-t">'+st.total+'</div><div class="ss-l">Total</div></div>'+
@@ -375,131 +578,104 @@ function renderSchool(name){
     '<div class="ss"><div class="ss-v" id="st-e" style="color:'+c+'">'+(st.eff!=null?st.eff+'%':'—')+'</div><div class="ss-l">Eficiência</div></div>'+
     '</div></div>'+
     '<div class="tw">'+
-    '<div class="tw-bar">'+
-    '<div class="tw-ttl">Equipamentos e Status</div>'+
-    '<button class="tbtn" onclick="toggleEditMode()" id="edit-mode-btn">&#9998; Modo Edição</button>'+
-    '<button class="tbtn amber" onclick="exportSchoolEdits(\''+s.sh.replace(/'/g,"\\'")+'\')" style="display:'+(edCnt?'':'none')+'" id="export-school-btn">&#8595; Exportar</button>'+
-    (edCnt?'<button class="tbtn" onclick="clearSchoolEdits(\''+s.sh.replace(/'/g,"\\'")+'\')" style="color:var(--red2);border-color:rgba(255,34,34,.2)">&#215; Limpar edições</button>':'')+
-    '<span class="mla" id="eq-cnt"></span>'+
+    '<div class="tw-bar"><div class="tw-ttl">Equipamentos e Status</div>'+
+    '<button class="chip'+(SFILT==='all'?' on':'')+'" onclick="setSFilt(\'all\')">Todos · '+st.total+'</button>'+
+    '<button class="chip'+(SFILT==='ok'?' on':'')+'" onclick="setSFilt(\'ok\')">OK · '+st.op+'</button>'+
+    '<button class="chip'+(SFILT==='fl'?' on':'')+'" onclick="setSFilt(\'fl\')">Falha · '+st.inop+'</button>'+
+    '<span class="mla" id="eq-cnt" style="font-size:10px;color:var(--t3)">&#9998; clique em qualquer campo para editar</span>'+
     '</div>'+
     '<div id="eq-body"></div></div>';
-
   renderEquipTable(s);
+  updSaveBar();
 }
-
-function toggleEditMode(){
-  EDIT_MODE=!EDIT_MODE;
-  var btn=document.getElementById('edit-mode-btn');
-  if(btn){
-    btn.style.background=EDIT_MODE?'var(--rdim)':'';
-    btn.style.color=EDIT_MODE?'var(--red2)':'';
-    btn.style.borderColor=EDIT_MODE?'var(--red)':'';
-    btn.textContent=EDIT_MODE?'✓ Editando...':'✎ Modo Edição';
-  }
-  var name=document.getElementById('ct').textContent;
-  var s=IDX.filter(function(x){return x.u===name;})[0];
-  if(s)renderEquipTable(s);
-}
-
 function renderEquipTable(s){
   var body=document.getElementById('eq-body');
-  var cntEl=document.getElementById('eq-cnt');
   var L=LIVE[s.sh];
   if(!L){
-    body.innerHTML='<div class="empty"><div class="ic">&#128268;</div><p>Sem conexão com a planilha.<br>A lista de equipamentos aparece quando a aba "'+xe(s.sh)+'" for carregada.<br><button class="tbtn" onclick="refreshData(true)" style="margin-top:10px">&#8635; Tentar novamente</button></p></div>';
-    if(cntEl)cntEl.textContent='';
+    body.innerHTML='<div class="empty"><div class="ic">&#128268;</div><p>Sem conexão com a planilha.<br><button class="tbtn" onclick="refreshData(true)" style="margin-top:10px">&#8635; Tentar novamente</button></p></div>';
     return;
   }
-  var items=L.eq;
-  var eq=items.filter(function(x){return x.e;});
-
   var html='<table><thead><tr>'+
-    '<th style="min-width:130px">Ambiente</th>'+
-    '<th style="min-width:110px">Equipamento</th>'+
-    '<th style="min-width:80px">BTU/h</th>'+
-    '<th style="min-width:100px">Fabricante</th>'+
-    '<th style="min-width:100px">Modelo</th>'+
-    '<th style="min-width:150px">Pendência</th>'+
-    '<th style="min-width:140px">Observações</th>'+
-    '<th style="min-width:90px">Status</th>'+
+    '<th style="min-width:120px">Ambiente</th><th style="min-width:110px">Equipamento</th>'+
+    '<th style="min-width:70px">BTU/h</th><th style="min-width:95px">Fabricante</th>'+
+    '<th style="min-width:95px">Modelo</th><th style="min-width:140px">Pendência</th>'+
+    '<th style="min-width:130px">Observações</th><th style="min-width:90px">Status</th>'+
     '</tr></thead><tbody>';
-
-  var eqIdx=0;
-  items.forEach(function(item){
+  var ri=0;
+  L.eq.forEach(function(item){
     if(item.env){
       html+='<tr class="env-row"><td colspan="8" style="padding-left:14px">&#9658; '+xe(item.a)+'</td></tr>';
       return;
     }
-    var ri=eqIdx++;
-    var vBtu=getVal(s.sh,ri,'btu',item.btu);
-    var vFab=getVal(s.sh,ri,'fab',item.fab);
-    var vMod=getVal(s.sh,ri,'mod',item.mod);
-    var vPend=getVal(s.sh,ri,'pend',item.pend);
-    var vObs=getVal(s.sh,ri,'obs',item.obs);
-    var ok=isOk(s.sh,ri,item);
-    var ovr=OV.hasOwnProperty(s.sh+'|'+ri);
-
-    function cell(field,val,isLong){
-      var isEdited=getEdit(s.sh,ri,field)!==null;
-      if(!EDIT_MODE){
-        return '<td style="font-size:10.5px;color:'+(isEdited?'var(--a)':'var(--t2)')+'">'+xe(val||'—')+'</td>';
-      }
-      return '<td style="'+(isLong?'min-width:150px':'')+'">'+
-        '<span class="'+(isEdited?'editable edited':'editable')+'" '+
-        'onclick="startEdit(this,\''+s.sh.replace(/'/g,"\\'")+'\','+ri+',\''+field+'\')" '+
-        'style="font-size:10.5px;color:'+(isEdited?'var(--a)':'var(--t2)')+';display:block;cursor:pointer">'+
-        xe(val||'—')+'</span></td>';
+    var i=ri++;
+    var ok=isOk(s.sh,i,item);
+    if(SFILT==='ok'&&!ok)return;
+    if(SFILT==='fl'&&ok)return;
+    function cell(f,orig,isLong){
+      var val=getVal(s.sh,i,f,orig);
+      var mark=isPend(s.sh,i,f)?'var(--red2)':(isLocal(s.sh,i,f)?'var(--a)':'var(--t2)');
+      return '<td style="'+(isLong?'min-width:140px':'')+'">'+
+        '<span onclick="startEdit(this,\''+qs(s.sh)+'\','+i+',\''+f+'\',\''+qs(orig)+'\')" '+
+        'style="font-size:10.5px;color:'+mark+';display:block;cursor:text;min-height:14px" '+
+        'title="clique para editar">'+xe(val||'—')+'</span></td>';
     }
-
-    html+='<tr id="er-'+ri+'">'+
-      '<td style="font-size:10.5px;color:var(--t2)">'+xe(item.a||'—')+'</td>'+
-      '<td class="eq-nm">'+xe(item.e)+'</td>'+
-      cell('btu',vBtu,false)+
-      cell('fab',vFab,false)+
-      cell('mod',vMod,false)+
-      cell('pend',vPend,true)+
-      cell('obs',vObs,true)+
+    var kOv=isPend(s.sh,i,'st')||isLocal(s.sh,i,'st');
+    html+='<tr>'+
+      cell('a',item.a,false)+
+      cell('e',item.e,false)+
+      cell('btu',item.btu,false)+
+      cell('fab',item.fab,false)+
+      cell('mod',item.mod,false)+
+      cell('pend',item.pend,true)+
+      cell('obs',item.obs,true)+
       '<td><div class="tg-wrap">'+
       '<label class="tg"><input type="checkbox" '+(ok?'checked':'')+
-      ' onchange="toggleEq(\''+s.sh.replace(/'/g,"\\'")+'\','+ri+',this.checked)">'+
+      ' onchange="toggleEq(\''+qs(s.sh)+'\','+i+',this.checked)">'+
       '<div class="tg-tr"><div class="tg-th"></div></div></label>'+
-      '<span class="tg-lb '+(ok?'ok':'fl')+'" id="tl-'+ri+'">'+(ok?'OK':'FALHA')+(ovr?' *':'')+'</span>'+
+      '<span class="tg-lb '+(ok?'ok':'fl')+'" id="tl-'+i+'">'+(ok?'OK':'FALHA')+(kOv?' *':'')+'</span>'+
       '</div></td></tr>';
   });
-
   html+='</tbody></table>';
   body.innerHTML=html;
-  if(cntEl)cntEl.innerHTML=eq.length+' equipamentos'+(EDIT_MODE?' · <span style="color:var(--a)">&#9998; clique nas células para editar</span>':' · status vindo da planilha; * = alterado localmente');
 }
-
-function startEdit(el,sh,ri,field){
+function startEdit(el,sh,ri,field,orig){
+  if(el._editing)return;el._editing=true;
   var cur=el.textContent==='—'?'':el.textContent;
   var isLong=(field==='obs'||field==='pend');
-  var tag=isLong?'textarea':'input';
-  var inp=document.createElement(tag);
-  inp.className='ed-input';
-  inp.value=cur;
-  if(isLong){inp.rows=2;inp.style.height='54px';}
+  var inp=document.createElement(isLong?'textarea':'input');
+  inp.className='ed-input';inp.value=cur;
+  if(isLong){inp.rows=2;inp.style.height='50px';}
   el.style.display='none';
   el.parentNode.insertBefore(inp,el.nextSibling);
-  inp.focus();inp.select();
+  inp.focus();
+  try{inp.select();}catch(e){}
+  var done=false;
   function save(){
+    if(done)return;done=true;
     var val=inp.value.trim();
-    setEdit(sh,ri,field,val);
+    setPending(sh,ri,field,val,orig);
     el.textContent=val||'—';
-    el.style.color=val?'var(--a)':'var(--t2)';
-    el.className=val?'editable edited':'editable';
-    el.style.display='';
+    el.style.color=isPend(sh,ri,field)?'var(--red2)':(isLocal(sh,ri,field)?'var(--a)':'var(--t2)');
+    el.style.display='';el._editing=false;
     if(inp.parentNode)inp.parentNode.removeChild(inp);
+    if(field==='st'){/* não usado aqui */}
   }
   inp.addEventListener('blur',save);
   inp.addEventListener('keydown',function(e){
     if(e.key==='Enter'&&!isLong){e.preventDefault();save();}
-    if(e.key==='Escape'){el.style.display='';if(inp.parentNode)inp.parentNode.removeChild(inp);}
+    if(e.key==='Escape'){done=true;el.style.display='';el._editing=false;if(inp.parentNode)inp.parentNode.removeChild(inp);}
   });
 }
-
-function updStats(s){
+function toggleEq(sh,ri,checked){
+  var s=IDX.filter(function(x){return x.sh===sh;})[0];
+  var L=LIVE[sh];var orig='';
+  if(L){var eq=L.eq.filter(function(x){return x.e;});if(eq[ri])orig=eq[ri].st;}
+  setPending(sh,ri,'st',checked?'1':'0',orig);
+  if(!s)return;
+  updStatsHdr(s);buildSB();
+  if(CUR.indexOf('school:')===0)renderSchool(s.u);
+}
+function updStatsHdr(s){
   var st=getStats(s),c=ec(st.eff);
   var t=document.getElementById('st-t'),o=document.getElementById('st-o'),i=document.getElementById('st-i'),e=document.getElementById('st-e');
   if(t)t.textContent=st.total;if(o)o.textContent=st.op;
@@ -507,82 +683,90 @@ function updStats(s){
   if(e){e.textContent=st.eff!=null?st.eff+'%':'—';e.style.color=c;}
 }
 
-function toggleEq(sh,ri,checked){
-  var s=IDX.filter(function(x){return x.sh===sh;})[0];
-  var L=LIVE[sh];
-  var base=true;
-  if(L){var eq=L.eq.filter(function(x){return x.e;});if(eq[ri])base=eq[ri].st!=='0';}
-  var k=sh+'|'+ri;
-  if(checked===base){delete OV[k];}else{OV[k]=checked;}   // só guarda se difere da planilha
-  saveOv();
-  var lbl=document.getElementById('tl-'+ri);
-  if(lbl){lbl.textContent=(checked?'OK':'FALHA')+(OV.hasOwnProperty(k)?' *':'');lbl.className='tg-lb '+(checked?'ok':'fl');}
-  if(!s)return;
-  updStats(s);buildSB();
-  if(CUR==='dashboard')renderDash(null);
+/* ============ SEÇÕES ============ */
+function renderSection(id){
+  var sec=SECTIONS.filter(function(x){return x.id===id;})[0];if(!sec)return;
+  var d=SECT[id]||{missing:true,hdr:sec.cols,rows:[]};
+  var can=!!scriptUrl();
+  var head='<div class="ph"><h1>'+sec.tab+'</h1><p>'+(d.missing?
+    'A aba "'+xe(sec.tab)+'" ainda não existe na planilha — será criada automaticamente ao salvar o primeiro registro.':
+    d.rows.length+' registro'+(d.rows.length===1?'':'s')+' · aba "'+xe(sec.tab)+'" da planilha')+'</p></div>';
+  var bar='<div class="tw"><div class="tw-bar"><div class="tw-ttl">'+sec.tab+'</div>'+
+    '<span class="mla"><button class="tbtn amber" onclick="openSecForm(\''+id+'\')" '+(can?'':'disabled title="configure o Apps Script (⚙) para adicionar registros"')+'>+ Novo registro</button></span></div>';
+  var table;
+  if(!d.rows.length){
+    table='<div class="empty"><div class="ic">'+sec.ic+'</div><p>Nenhum registro ainda.'+(can?'':'<br><span style="font-size:10.5px;color:var(--t3)">Para adicionar pelo site, configure o Apps Script no botão ⚙ acima.</span>')+'</p></div>';
+  }else{
+    var ths=d.hdr.map(function(h){return '<th>'+xe(h||'')+'</th>';}).join('');
+    var trs=d.rows.map(function(r){
+      return '<tr>'+d.hdr.map(function(_,j){return '<td style="font-size:10.5px">'+xe(r[j]||'—')+'</td>';}).join('')+'</tr>';
+    }).join('');
+    table='<table><thead><tr>'+ths+'</tr></thead><tbody>'+trs+'</tbody></table>';
+  }
+  document.getElementById('pg').innerHTML=head+bar+table+'</div>';
+  updSaveBar();
+}
+function openSecForm(id){
+  var sec=SECTIONS.filter(function(x){return x.id===id;})[0];if(!sec)return;
+  var d=SECT[id]||{hdr:sec.cols};
+  var hdr=(d.hdr&&d.hdr.length)?d.hdr:sec.cols;
+  var esc='<datalist id="dl-escolas">'+IDX.map(function(s){return '<option value="'+xe(s.u)+'">';}).join('')+'</datalist>';
+  var fields=hdr.map(function(h,j){
+    var isEscola=(h||'').toLowerCase().indexOf('escola')>-1;
+    return '<div style="margin-bottom:9px"><label style="font-size:10px;color:var(--t3);text-transform:uppercase;letter-spacing:.06em">'+xe(h||('Campo '+(j+1)))+'</label>'+
+      '<input id="sf-'+j+'" '+(isEscola?'list="dl-escolas"':'')+' style="width:100%;background:var(--s3);border:1px solid var(--ln);border-radius:6px;color:var(--t1);font-size:11.5px;padding:8px;outline:none;margin-top:3px"></div>';
+  }).join('');
+  document.getElementById('secmodal-in').innerHTML=
+    '<h3 style="font-size:15px;margin-bottom:12px">+ '+sec.tab+'</h3>'+esc+fields+
+    '<div class="modal-btns"><button class="tbtn" onclick="closeSecForm()">Cancelar</button>'+
+    '<button class="tbtn amber" onclick="submitSecForm(\''+id+'\','+hdr.length+')">Salvar na planilha</button></div>';
+  document.getElementById('secmodal').style.display='flex';
+}
+function closeSecForm(){document.getElementById('secmodal').style.display='none';}
+function submitSecForm(id,n){
+  var sec=SECTIONS.filter(function(x){return x.id===id;})[0];
+  var d=SECT[id]||{hdr:sec.cols};
+  var hdr=(d.hdr&&d.hdr.length)?d.hdr:sec.cols;
+  var vals=[];for(var j=0;j<n;j++){var el=document.getElementById('sf-'+j);vals.push(el?el.value.trim():'');}
+  if(!vals.some(function(v){return v;})){toast('Preencha ao menos um campo',true);return;}
+  var url=scriptUrl();
+  if(!url){toast('Configure o Apps Script (\u2699) primeiro',true);return;}
+  fetch(url,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain'},
+    body:JSON.stringify({action:'append',tab:sec.tab,headers:hdr,values:vals})})
+  .then(function(){
+    closeSecForm();toast('Registro enviado \u2713');
+    setTimeout(function(){fetchSection(sec).then(function(){buildSB();if(CUR==='sec:'+id)renderSection(id);});},1800);
+  }).catch(function(){toast('Falha ao enviar',true);});
 }
 
-/* ================= EXPORT / IMPORT ================= */
-function exportEdits(){
-  var data={overrides:OV,edits:EDITS,exported:new Date().toISOString()};
-  var blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
-  var a=document.createElement('a');a.href=URL.createObjectURL(blob);
-  a.download='fb_edicoes_'+new Date().toISOString().slice(0,10)+'.json';a.click();
+/* ============ CONFIG ============ */
+function openCfg(){
+  document.getElementById('cfgurl').value=scriptUrl();
+  document.getElementById('cfgmodal').style.display='flex';
 }
-function exportSchoolEdits(sh){
-  var schEdits={};Object.keys(EDITS).forEach(function(k){if(k.indexOf(sh+'|')===0)schEdits[k]=EDITS[k];});
-  var schOv={};Object.keys(OV).forEach(function(k){if(k.indexOf(sh+'|')===0)schOv[k]=OV[k];});
-  var data={sh:sh,overrides:schOv,edits:schEdits,exported:new Date().toISOString()};
-  var blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
-  var a=document.createElement('a');a.href=URL.createObjectURL(blob);
-  a.download='fb_'+sh.replace(/[^a-z0-9]/gi,'_')+'_edicoes.json';a.click();
-}
-function clearSchoolEdits(sh){
-  if(!confirm('Limpar todas as edições de '+sh+'?'))return;
-  Object.keys(EDITS).forEach(function(k){if(k.indexOf(sh+'|')===0)delete EDITS[k];});
-  Object.keys(OV).forEach(function(k){if(k.indexOf(sh+'|')===0)delete OV[k];});
-  saveEdits();saveOv();buildSB();
-  var name=document.getElementById('ct').textContent;
-  var s=IDX.filter(function(x){return x.u===name;})[0];
-  if(s)renderSchool(s.u);
-}
-function importEdits(){
-  var inp=document.createElement('input');inp.type='file';inp.accept='.json';
-  inp.onchange=function(e){
-    var file=e.target.files[0];if(!file)return;
-    var reader=new FileReader();
-    reader.onload=function(ev){
-      try{
-        var data=JSON.parse(ev.target.result);
-        if(data.edits)Object.assign(EDITS,data.edits);
-        if(data.overrides)Object.assign(OV,data.overrides);
-        saveEdits();saveOv();buildSB();
-        if(CUR==='dashboard')renderDash(null);
-        else{var nm=document.getElementById('ct').textContent;var s=IDX.filter(function(x){return x.u===nm;})[0];if(s)renderSchool(s.u);}
-        alert('Edições importadas com sucesso!');
-      }catch(err){alert('Erro ao importar: '+err.message);}
-    };
-    reader.readAsText(file);
-  };
-  inp.click();
+function closeCfg(){document.getElementById('cfgmodal').style.display='none';}
+function saveCfg(){
+  var v=document.getElementById('cfgurl').value.trim();
+  try{localStorage.setItem('fb_script_url',v);}catch(e){}
+  closeCfg();updBadge();updSaveBar();rerender();
+  toast(v?'Sincroniza\u00e7\u00e3o configurada \u2713':'Sincroniza\u00e7\u00e3o removida');
 }
 
 document.addEventListener('keydown',function(e){
   if((e.metaKey||e.ctrlKey)&&e.key==='k'){e.preventDefault();document.getElementById('src').focus();}
-  if(e.key==='Escape'&&!EDIT_MODE){document.getElementById('src').value='';filterSB('');document.getElementById('src').blur();}
 });
 
-/* ================= BOOT ================= */
+/* ============ BOOT ============ */
 (function(){
   var ov=document.getElementById('ld');
-  buildSB();updBadge();
+  buildSB();updBadge();updSaveBar();
   refreshData(false).then(function(){
     var bar=document.getElementById('ldbar'),stat=document.getElementById('ldst');
     if(bar)bar.style.width='100%';
-    if(stat)stat.textContent=LIVE_OK===IDX.length?'Pronto!':(LIVE_OK>0?LIVE_OK+' de '+IDX.length+' abas carregadas':'Sem conexão — exibindo último valor conhecido');
-    setTimeout(function(){ov.classList.add('out');setTimeout(function(){ov.style.display='none';go(CUR||'dashboard');},400);},350);
+    if(stat)stat.textContent=LIVE_OK===IDX.length?'Pronto!':(LIVE_OK>0?LIVE_OK+' de '+IDX.length+' abas carregadas':'Sem conex\u00e3o');
+    setTimeout(function(){ov.classList.add('out');setTimeout(function(){ov.style.display='none';go('dashboard');},400);},350);
   });
-  setInterval(function(){refreshData(false);},10*60*1000);  // atualiza a cada 10 min
+  setInterval(function(){if(!Object.keys(PENDING).length)refreshData(false);},10*60*1000);
 })();
 </script>
 </body>
