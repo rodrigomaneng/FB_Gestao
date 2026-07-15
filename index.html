@@ -162,7 +162,7 @@ function savePendingLS(){try{localStorage.setItem('fb_pending',JSON.stringify(PE
 loadLS();
 
 /* ============ LEITURA DA PLANILHA ============ */
-function gvizUrl(tab){return 'https://docs.google.com/spreadsheets/d/'+SHEET_ID+'/gviz/tq?tqx=out:json&headers=0&sheet='+encodeURIComponent(tab);}
+function gvizUrl(tab){return 'https://docs.google.com/spreadsheets/d/'+SHEET_ID+'/gviz/tq?tqx=out:json&headers=0&_cb='+Date.now()+'&sheet='+encodeURIComponent(tab);}
 function parseGviz(txt){
   var i=txt.indexOf('(');var j=txt.lastIndexOf(')');
   if(i<0||j<0)throw new Error('resposta inválida');
@@ -200,7 +200,7 @@ function parseTab(rows){
   return eq;
 }
 function fetchTab(s){
-  return fetch(gvizUrl(s.sh)).then(function(r){
+  return fetch(gvizUrl(s.sh),{cache:'no-store'}).then(function(r){
     if(!r.ok)throw new Error('HTTP '+r.status);
     return r.text();
   }).then(function(t){
@@ -218,7 +218,7 @@ function looksLikeDefaultTab(rows){
   return false;
 }
 function fetchSection(sec){
-  return fetch(gvizUrl(sec.tab)).then(function(r){return r.text();}).then(function(t){
+  return fetch(gvizUrl(sec.tab),{cache:'no-store'}).then(function(r){return r.text();}).then(function(t){
     var rows=parseGviz(t).filter(function(r){return r.some(function(c){return c!=='';});});
     if(!rows.length||looksLikeDefaultTab(rows)){SECT[sec.id]={missing:true,hdr:sec.cols,rows:[]};return;}
     var hdr=rows[0].filter(function(c){return c!=='';}).length>=2?rows[0]:sec.cols;
@@ -236,8 +236,8 @@ function normName(s){
   return s;
 }
 function fetchSpv(){
-  var url='https://docs.google.com/spreadsheets/d/'+SHEET_ID+'/gviz/tq?tqx=out:json&headers=0&gid='+SUMMARY_GID;
-  return fetch(url).then(function(r){return r.text();}).then(function(t){
+  var url='https://docs.google.com/spreadsheets/d/'+SHEET_ID+'/gviz/tq?tqx=out:json&headers=0&_cb='+Date.now()+'&gid='+SUMMARY_GID;
+  return fetch(url,{cache:'no-store'}).then(function(r){return r.text();}).then(function(t){
     var rows=parseGviz(t);
     var map={};
     rows.forEach(function(r){
@@ -267,10 +267,23 @@ function refreshData(manual){
   jobs.push(fetchSpv());
   return Promise.all(jobs).then(function(){
     LAST_SYNC=new Date();
+    pruneEdits();
     updBadge();buildSB();
     if(btn){btn.disabled=false;btn.innerHTML='&#8635; Atualizar';}
     rerender();
   });
+}
+function pruneEdits(){
+  var changed=false;
+  Object.keys(EDITS).forEach(function(k){
+    var p=k.split('|');if(p.length<3)return;
+    var sh=p[0],ri=parseInt(p[1],10),f=p.slice(2).join('|');
+    var L=LIVE[sh];if(!L)return;
+    var eq=L.eq.filter(function(x){return x.e;});
+    if(!eq[ri])return;
+    if(String(eq[ri][f]!==undefined?eq[ri][f]:'')===String(EDITS[k])){delete EDITS[k];changed=true;}
+  });
+  if(changed)saveEdits();
 }
 function rerender(){
   if(CUR==='dashboard')renderDash();
@@ -339,9 +352,10 @@ function savePending(){
   fetch(url,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain'},
     body:JSON.stringify({action:'write',edits:list})})
   .then(function(){
-    PENDING={};savePendingLS();updSaveBar();
+    list.forEach(function(p){EDITS[pkey(p.sh,p.ri,p.field)]=p.val;});  // segura o valor na tela
+    saveEdits();PENDING={};savePendingLS();updSaveBar();rerender();
     toast('Salvo na planilha ✓');
-    setTimeout(function(){refreshData(false);},1500);
+    setTimeout(function(){refreshData(false);},4000);
   })
   .catch(function(){toast('Falha ao salvar — verifique a conexão',true);})
   .then(function(){if(btn){btn.disabled=false;btn.innerHTML='&#10003; Salvar na planilha';}});
