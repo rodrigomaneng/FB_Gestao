@@ -40,6 +40,10 @@ html,body{height:100%;font-family:var(--ff);background:var(--bg);color:var(--t1)
 .kpi-v{font-size:24px;font-weight:700;font-family:var(--fm)}.kpi-v.g{color:var(--g)}.kpi-v.r{color:var(--red2)}.kpi-v.a{color:var(--a)}.kpi-s{font-size:10px;color:var(--t3);margin-top:2px}
 .tw{background:var(--s1);border:1px solid var(--ln);border-radius:10px;overflow:hidden}
 .tw-bar{padding:10px 14px;border-bottom:1px solid var(--ln);display:flex;align-items:center;gap:8px;flex-wrap:wrap;min-height:44px}
+.eq-search{background:var(--s2);border:1px solid var(--ln);border-radius:6px;padding:4px 10px;color:var(--t1);font-size:11px;font-family:var(--ff);width:190px;outline:none;transition:border .15s}
+.eq-search:focus{border-color:var(--red)}.eq-search::placeholder{color:var(--t3)}
+.eq-del{background:none;border:none;color:var(--t3);cursor:pointer;font-size:13px;margin-left:8px;padding:2px 4px;border-radius:4px;line-height:1}
+.eq-del:hover{color:var(--red2);background:var(--rdim)}
 .tw-ttl{font-size:12px;font-weight:600}
 .chip{background:var(--s3);border:1px solid var(--ln);border-radius:16px;color:var(--t2);font-size:10px;padding:3px 9px;cursor:pointer;font-family:var(--ff);transition:all .12s}
 .chip:hover{color:var(--t1);border-color:var(--t3)}.chip.on{background:var(--rdim);border-color:var(--red);color:var(--red2)}
@@ -593,9 +597,11 @@ document.getElementById('pg').innerHTML=
 '</div></div>'+
 '<div class="tw">'+
 '<div class="tw-bar"><div class="tw-ttl">Equipamentos e Status</div>'+
+'<input id="eq-search" class="eq-search" type="text" placeholder="&#128269; Buscar equipamento..." oninput="searchEquip()" autocomplete="off">'+
 '<button class="chip'+(SFILT==='all'?' on':'')+'" onclick="setSFilt(\'all\')">Todos · '+st.total+'</button>'+
 '<button class="chip'+(SFILT==='ok'?' on':'')+'" onclick="setSFilt(\'ok\')">OK · '+st.op+'</button>'+
 '<button class="chip'+(SFILT==='fl'?' on':'')+'" onclick="setSFilt(\'fl\')">Falha · '+st.inop+'</button>'+
+'<button class="tbtn green" onclick="addMachine(\''+qs(s.sh)+'\',\''+qs(s.u)+'\')" style="margin-left:6px">+ Máquina</button>'+
 '<span class="mla" id="eq-cnt" style="font-size:10px;color:var(--t3)">&#9998; clique em qualquer campo para editar</span>'+
 '</div>'+
 '<div id="eq-body"></div></div>';
@@ -650,6 +656,7 @@ cell('obs',item.obs,true)+
 ' onchange="toggleEq(\''+qs(s.sh)+'\','+i+',this.checked)">'+
 '<div class="tg-tr"><div class="tg-th"></div></div></label>'+
 '<span class="tg-lb '+(ok?'ok':'fl')+'" id="tl-'+i+'">'+(ok?'OK':'FALHA')+(kOv?' *':'')+'</span>'+
+'<button class="eq-del" title="Remover máquina" onclick="removeMachine(\''+qs(s.sh)+'\','+i+',\''+qs(item.e)+'\')">&#10005;</button>'+
 '</div></td></tr>';
 });
 html+='</tbody></table>';
@@ -698,6 +705,42 @@ var t=document.getElementById('st-t'),o=document.getElementById('st-o'),i=docume
 if(t)t.textContent=st.total;if(o)o.textContent=st.op;
 if(i){i.textContent=st.inop;i.style.color=st.inop>0?'var(--red2)':'';}
 if(e){e.textContent=st.eff!=null?st.eff+'%':'—';e.style.color=c;}
+}
+function searchEquip(){
+var el=document.getElementById('eq-search');
+var q=(el?el.value:'').toLowerCase().trim();
+var rows=document.querySelectorAll('#eq-body table tbody tr');
+for(var i=0;i<rows.length;i++){
+var tr=rows[i];
+if((tr.className||'').indexOf('env-row')>=0){tr.style.display=q?'none':'';continue;}
+if(!q){tr.style.display='';continue;}
+tr.style.display=(tr.textContent||'').toLowerCase().indexOf(q)>=0?'':'none';
+}
+}
+function addMachine(sh,uname){
+var url=scriptUrl();
+if(!url){toast('Configure o Apps Script (⚙) para adicionar máquinas na planilha.',true);return;}
+var amb=prompt('Ambiente / local (ex.: Almoxarifado).\nDeixe em branco para seguir no mesmo ambiente da linha anterior:','');
+if(amb===null)return;
+var eqp=prompt('Equipamento (ex.: Central 01):','');
+if(eqp===null)return;
+eqp=(eqp||'').trim();
+if(!eqp){toast('Informe o nome do equipamento.',true);return;}
+toast('Adicionando "'+eqp+'"... atualizando');
+fetch(url,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain'},
+body:JSON.stringify({action:'addEquip',sh:sh,ambiente:(amb||'').trim(),equipamento:eqp})})
+.then(function(){setTimeout(function(){refreshData(false);},4000);})
+.catch(function(){toast('Falha ao adicionar — verifique a conexão',true);});
+}
+function removeMachine(sh,ri,nome){
+var url=scriptUrl();
+if(!url){toast('Configure o Apps Script (⚙) para remover máquinas.',true);return;}
+if(!confirm('Remover a máquina "'+(nome||'')+'"? A linha será apagada na planilha.'))return;
+toast('Removendo... atualizando');
+fetch(url,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain'},
+body:JSON.stringify({action:'deleteEquip',sh:sh,ri:ri})})
+.then(function(){setTimeout(function(){refreshData(false);},4000);})
+.catch(function(){toast('Falha ao remover',true);});
 }
 
 /* ============ SEÇÕES ============ */
